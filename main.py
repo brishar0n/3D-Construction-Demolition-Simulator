@@ -2,6 +2,7 @@ from direct.showbase.ShowBaseGlobal import globalClock
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import Vec3, DirectionalLight, AmbientLight, WindowProperties, CollisionNode, CollisionTraverser, CollisionRay, CollisionHandlerQueue, GeomNode, CardMaker
 from panda3d.bullet import BulletWorld, BulletRigidBodyNode, BulletBoxShape, BulletDebugNode
+from direct.gui.DirectGui import DirectSlider, DirectFrame, OnscreenText, DirectButton
 
 # CONSTANTS
 
@@ -12,9 +13,13 @@ CAMERA_SPEED = 5
 
 class main(ShowBase):
     physics_world = BulletWorld()
+    alt_pressed = False
+    current_block_size = 1.0
     
     def __init__(self):
         ShowBase.__init__(self)
+
+        self.camera_position = self.camera.getPos()
 
         self.setup_window()
         self.setup_camera()
@@ -48,6 +53,12 @@ class main(ShowBase):
         self.picker_traverser = CollisionTraverser('mousePicker')
         self.picker_traverser.addCollider(self.picker_ray_np, self.picker_handler)
 
+        self.setup_ui()
+        
+        self.current_block_size = 1.0
+    
+        self.alt_pressed = False
+        self.accept('alt', self.toggle_mouse)
         self.accept('mouse1', self.add_block_at_click)
 
     def setup_window(self):
@@ -92,7 +103,6 @@ class main(ShowBase):
         plane_np.setPos(0, 0, -0.1)
         self.physics_world.attachRigidBody(plane_node)
 
-        # Add visual plane
         cm = CardMaker("ground")
         cm.setFrame(-10, 10, -10, 10)
         plane_visual = self.render.attachNewNode(cm.generate())
@@ -101,7 +111,8 @@ class main(ShowBase):
         plane_visual.setColor(0, 1, 0.3, 1)
 
     def add_cube(self, position):
-        cube_shape = BulletBoxShape(Vec3(0.5, 0.5, 0.5))
+        size = self.current_block_size
+        cube_shape = BulletBoxShape(Vec3(size * 0.5, size * 0.5, size * 0.5))
         cube_node = BulletRigidBodyNode('Box')
         cube_node.setMass(1.0)
         cube_node.addShape(cube_shape)
@@ -110,7 +121,7 @@ class main(ShowBase):
         self.physics_world.attachRigidBody(cube_node)
 
         model = self.loader.loadModel('models/box')
-        model.setScale(1)
+        model.setScale(size)
         model.reparentTo(cube_np)
 
     def setup_controls(self):
@@ -137,6 +148,70 @@ class main(ShowBase):
         elif direction == "right":
             self.moving_right = value
 
+    def setup_ui(self):
+        self.ui_frame = DirectFrame(frameColor=(0, 0, 0, 0.5),
+                                    frameSize=(-1.3, 1.3, -0.1, 0.1),
+                                    pos=(0, 0, -0.95))
+
+        self.block_size_label = OnscreenText(text="Block Size:",
+                                             pos=(-1.1, -0.03),
+                                             scale=0.05,
+                                             parent=self.ui_frame)
+
+        self.block_size_slider = DirectSlider(range=(0.5, 3.0),
+                                              value=self.current_block_size,
+                                              pageSize=0.1,
+                                              command=self.set_block_size,
+                                              scale=0.3,
+                                              pos=(-0.3, 0, -0.03),
+                                              parent=self.ui_frame)
+        
+        self.toggle_button = DirectButton(text="Toggle Mouse",
+                                          scale=0.05,
+                                          command=self.toggle_mouse,
+                                          pos=(0.5, 0, -0.03),
+                                          parent=self.ui_frame)
+
+    def set_block_size(self):
+        self.current_block_size = self.block_size_slider['value']
+
+    def toggle_mouse(self):
+        self.alt_pressed = not self.alt_pressed
+
+        if self.alt_pressed:
+            self.win_properties.setCursorHidden(False)
+            self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
+            self.disable_controls()
+        else:
+            self.disableMouse()
+            self.camera.lookAt(0, 0, 0)
+            self.camera.setPos(0, -15, 5)
+            self.win_properties.setCursorHidden(True)
+            self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
+            self.enable_controls()
+
+        self.win.requestProperties(self.win_properties)
+
+    def disable_controls(self):
+        self.ignore("w")
+        self.ignore("w-up")
+        self.ignore("s")
+        self.ignore("s-up")
+        self.ignore("a")
+        self.ignore("a-up")
+        self.ignore("d")
+        self.ignore("d-up")
+
+    def enable_controls(self):
+        self.accept("w", self.set_moving, ["forward", True])
+        self.accept("w-up", self.set_moving, ["forward", False])
+        self.accept("s", self.set_moving, ["backward", True])
+        self.accept("s-up", self.set_moving, ["backward", False])
+        self.accept("a", self.set_moving, ["left", True])
+        self.accept("a-up", self.set_moving, ["left", False])
+        self.accept("d", self.set_moving, ["right", True])
+        self.accept("d-up", self.set_moving, ["right", False])
+
     def exit_app(self):
         self.userExit()
 
@@ -149,7 +224,7 @@ class main(ShowBase):
                 self.picker_handler.sortEntries()
                 entry = self.picker_handler.getEntry(0)
                 point = entry.getSurfacePoint(self.render)
-                point.setZ(point.getZ() + 2)
+                point.setZ(point.getZ() + self.current_block_size * 2)
                 self.add_cube(point)
 
     def update(self, task):
@@ -165,14 +240,15 @@ class main(ShowBase):
         if self.moving_right:
             self.camera.setX(self.camera, self.move_speed * dt)
 
-        if self.mouse_watcher.hasMouse():
+        if not self.alt_pressed:
+           if self.mouse_watcher.hasMouse():
             mouse_x = self.mouse_watcher.getMouseX()
             mouse_y = self.mouse_watcher.getMouseY()
             self.camera_heading -= mouse_x * self.mouse_sensitivity
             self.camera_pitch = max(-90, min(90, self.camera_pitch + mouse_y * self.mouse_sensitivity))
             self.camera.setHpr(self.camera_heading, self.camera_pitch, 0)
 
-        self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
+           self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
 
         return task.cont
 
