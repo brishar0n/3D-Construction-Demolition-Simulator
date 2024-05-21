@@ -81,14 +81,12 @@ class main(ShowBase):
         self.physics_world.setDebugNode(self.debug_np.node())
 
     def setup_lighting(self):
-        # Directional light
         d_light = DirectionalLight("d_light")
         d_light.setColor((1, 1, 1, 1))
         d_light_np = self.render.attachNewNode(d_light)
         d_light_np.setHpr(0, -60, 0)
         self.render.setLight(d_light_np)
 
-        # Ambient light
         a_light = AmbientLight("a_light")
         a_light.setColor((0.2, 0.2, 0.2, 1))
         a_light_np = self.render.attachNewNode(a_light)
@@ -184,8 +182,6 @@ class main(ShowBase):
             self.disable_controls()
         else:
             self.disableMouse()
-            self.camera.lookAt(0, 0, 0)
-            self.camera.setPos(0, -15, 5)
             self.win_properties.setCursorHidden(True)
             self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
             self.enable_controls()
