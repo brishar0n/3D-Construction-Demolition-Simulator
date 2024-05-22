@@ -14,6 +14,8 @@
 - panda3d | `pip install panda3d`
 - Python (if haven't installed yet)
 
+---
+
 ### Controls
 #### Camera Movement:
 ##### W - Move forward
