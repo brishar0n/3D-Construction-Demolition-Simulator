@@ -1,3 +1,5 @@
+# Incomplete code
+
 class DestructionMethod:
     def __init__(self, name, force):
         self.name = name
