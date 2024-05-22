@@ -11,7 +11,7 @@
 - Destruction can be simple as dropping heavy balls (drops in where the user clicks) on the structures or explosions
 
 ### Installation
-- panda3d | `pip install panda3d`
+- panda3d | `pip install panda3d
 `
 - Python (if haven't installed yet)
 
