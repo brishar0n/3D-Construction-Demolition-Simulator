@@ -1,4 +1,4 @@
-# 3D Construction Demolition Simulator
+# 3D Construction Demolition Simulator 🧱
 
 ### Overview
 
