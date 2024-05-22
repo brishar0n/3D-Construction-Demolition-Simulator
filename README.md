@@ -16,13 +16,13 @@
 - Python (if haven't installed yet)
 
 ### Controls
-#### Camera Movement
-##### W: Move forward
-##### S: Move backward
-##### A: Move left
-##### D: Move right
-##### Mouse Movement: Look around
+#### Camera Movement:
+##### W - Move forward
+##### S - Move backward
+##### A - Move left
+##### D - Move right
+##### Mouse Movement - Look around
 
-#### Block Interaction
-##### Mouse Click (Left Button): Add a block at the clicked location
-##### Block Size Slider: Adjust the size of the blocks to be placed
+#### Block Interaction:
+##### Mouse Click (Left Button) - Add a block at the clicked location
+##### Block Size Slider - Adjust the size of the blocks to be placed
