@@ -1,7 +1,6 @@
-from direct.showbase.ShowBaseGlobal import globalClock
-from direct.showbase.ShowBase import ShowBase
 from panda3d.core import Vec3, LPoint3f
 from panda3d.bullet import BulletSphericalConstraint, BulletRigidBodyNode, BulletBoxShape, BulletSphereShape
+import numpy as np
 
 
 class DestructionManager:
@@ -56,8 +55,13 @@ class DestructionManager:
 
         for node in main_app.render.getChildren():
             if node.node().isOfType(BulletRigidBodyNode.getClassType()):
-                distance = (node.getPos() - position).length()
+                node_position = node.getPos()
+                distance_vector = node_position - position
+                distance = np.linalg.norm([distance_vector.getX(), distance_vector.getY(), distance_vector.getZ()])
+
                 if distance < radius:
-                    direction = (node.getPos() - position).normalized()
-                    impulse = direction * (force / (distance + 0.1))
+                    direction = distance_vector / distance  # Normalize the direction vector
+                    impulse_magnitude = force / (distance + 0.1)
+                    impulse = direction * impulse_magnitude
+                    
                     node.node().applyCentralImpulse(impulse)
