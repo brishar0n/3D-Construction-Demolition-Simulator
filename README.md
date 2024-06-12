@@ -9,7 +9,7 @@
 ### Features
 - Different block materials
 - Different block shapes and sizes
-- Destruction can be simple as dropping heavy balls (drops in where the user clicks) on the structures or explosions
+- Distinct demolition methods like explosions, wrecking ball, earthquake and dropping a ball
 
 ### Installation
 - panda3d | `pip install panda3d`
