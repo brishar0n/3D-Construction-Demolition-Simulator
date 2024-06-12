@@ -219,7 +219,7 @@ class MainApp(ShowBase):
                                          pos=(-1, 0, 0))
 
         self.ui_frame_right = DirectFrame(frameColor=(0, 0, 0, 0.5),
-                                          frameSize=(-0.1, 0.3, -0.3, 0.3),
+                                          frameSize=(-0.1, 0.3, -0.7, 0.7),
                                           pos=(1, 0, 0))
 
         self.clear_blocks_button = DirectButton(text="Clear",
@@ -295,36 +295,48 @@ class MainApp(ShowBase):
         self.wrecking_ball_button = DirectButton(image='assets/Wrecking_Ball.png',
                                                 scale=0.1,
                                                 command=self.destruction_manager.add_wrecking_ball,
-                                                pos=(0.1, 0, 0.15),
+                                                pos=(0.1, 0, 0.55),
                                                 parent=self.ui_frame_right)
-
+        
+        self.drop_ball_button = DirectButton(image='assets/Drop_Ball.png',
+                                             scale=0.1,
+                                             command=self.show_drop_ball_inputs,
+                                             pos=(0.1, 0, 0.3),
+                                             parent=self.ui_frame_right)
+        
+        self.earthquake_button = DirectButton(image="assets/Earthquake.png",
+                                              scale=0.1,
+                                              command=self.trigger_earthquake,
+                                              pos=(0.1, 0, 0.05),
+                                              parent=self.ui_frame_right)
+        
         self.explosion_button = DirectButton(image='assets/Explosion.png',
                                             scale=0.1,
                                             command=self.show_explosion_inputs,
-                                            pos=(0.1, 0, -0.1),
+                                            pos=(0.1, 0, -0.2),
                                             parent=self.ui_frame_right)
-        
+
         self.explosion_force_label = DirectLabel(text="Force:",
                                              scale=0.05,
-                                             pos=(0, 0, -0.3),
+                                             pos=(0, 0, -0.4),
                                              parent=self.ui_frame_right,
                                              frameColor=(0, 0, 0, 0))
         
         self.explosion_force_entry = DirectEntry(text="",
                                                 scale=0.05,
-                                                pos=(0.15, 0, -0.3),
+                                                pos=(0.15, 0, -0.4),
                                                 parent=self.ui_frame_right,
                                                 numLines=1,
                                                 focus=0,
                                                 width=3)
         self.explosion_radius_label = DirectLabel(text="Radius:",
                                                 scale=0.05,
-                                                pos=(0, 0, -0.4),
+                                                pos=(0, 0, -0.5),
                                                 parent=self.ui_frame_right,
                                                 frameColor=(0, 0, 0, 0))
         self.explosion_radius_entry = DirectEntry(text="",
                                                 scale=0.05,
-                                                pos=(0.15, 0, -0.4),
+                                                pos=(0.15, 0, -0.5),
                                                 parent=self.ui_frame_right,
                                                 numLines=1,
                                                 focus=0,
@@ -346,7 +358,7 @@ class MainApp(ShowBase):
 
     def clear_blocks(self):
         for node in self.render.getChildren():
-            if node.getName() == 'Box' or node.getName() == 'WreckingBall':
+            if node.getName() == 'Box' or node.getName() == 'WreckingBall' or node.getName() == 'HeavyBall':
                 node.removeNode()
 
     def show_explosion_inputs(self):
@@ -363,6 +375,19 @@ class MainApp(ShowBase):
             self.explosion_radius_entry.show()
             self.placing_mode = 'explosion'
         self.update_labels()
+    
+    def show_drop_ball_inputs(self):
+        if self.physics_enabled:
+            if self.placing_mode == 'dropping':
+                self.placing_mode = 'building'
+            else:
+                self.placing_mode = 'dropping'
+            self.update_labels()
+
+    def trigger_earthquake(self):
+        if self.physics_enabled:
+            self.destruction_manager.trigger_earthquake()
+            self.update_labels()
 
     def set_block_size(self):
         self.current_block_size = self.block_size_slider['value']
@@ -410,7 +435,7 @@ class MainApp(ShowBase):
         self.userExit()
 
     def add_block_at_click(self):
-        if self.mouse_watcher.hasMouse():
+        if self.mouse_watcher.hasMouse() and (self.placing_mode == 'building' or self.placing_mode == 'dropping' or self.placing_mode == 'explosion'):
             self.picker_ray.setFromLens(self.camNode, 0, 0)
             self.picker_traverser.traverse(self.render)
             if self.picker_handler.getNumEntries() > 0:
@@ -438,6 +463,12 @@ class MainApp(ShowBase):
                     self.explosion_radius_entry.hide()
                     self.placing_mode = 'building'
                     self.update_labels()
+                elif self.placing_mode == 'dropping':
+                    self.destruction_manager.drop_heavy_ball(Vec3(snapped_x, snapped_y, snapped_z))
+                    self.placing_mode = 'building'
+                    self.update_labels()
+                elif self.placing_mode == 'earthquake':
+                    return
                 else:
                     self.add_cube(Vec3(snapped_x, snapped_y, snapped_z))
 
@@ -454,6 +485,15 @@ class MainApp(ShowBase):
         self.shape_label.setText(f"BLOCK: {self.current_shape.upper()}")
         self.material_label.setText(f"MATERIAL: {self.selected_material.upper()}")
         self.physics_label.setText(f"PHYSICS ENABLED: {self.physics_enabled_string.upper()}")
+
+        if self.placing_mode == 'earthquake':
+            self.cube_button['state'] = 'disabled'
+            self.cone_button['state'] = 'disabled'
+            self.sphere_button['state'] = 'disabled'
+        else:
+            self.cube_button['state'] = 'normal'
+            self.cone_button['state'] = 'normal'
+            self.sphere_button['state'] = 'normal'
 
     def update(self, task):
         dt = globalClock.getDt()
@@ -479,7 +519,7 @@ class MainApp(ShowBase):
                 self.camera.setHpr(self.camera_heading, self.camera_pitch, 0)
 
             self.win.movePointer(0, int(self.win.getProperties().getXSize() / 2), int(self.win.getProperties().getYSize() / 2))
- 
+
         return task.cont
 
 app = MainApp()
